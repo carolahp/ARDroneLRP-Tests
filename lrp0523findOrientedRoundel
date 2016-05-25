@@ -1,0 +1,49 @@
+;;; New program created by CaroHernandez on 25 May 2016
+;;; New program created by CaroHernandez on 25 May 2016
+
+(machine tagNavigator
+    	(state takingoff
+		(onentry [ robot takeOff ]))
+	(state ascending
+			(onentry [ robot modeHoverOnTopOfRoundel ]) 
+			(running [ robot elevateTo: 2000 atSpeed: 0.5])
+			(onexit [robot stabilize]))
+	(state looking
+		(machine lookAlgo
+			(state hovering
+				(onentry [ robot modeHoverOnTopOfRoundel ]))
+			(state descending 
+				(onentry [ robot elevate: -0.3])
+				(onexit [robot stabilize]))
+			(state orienting)
+			(state spinning
+				(onentry [robot animateFlight: 6 duration: 1000 ]))
+			(on ascentionDone ascending -> hovering)
+			;;(on descentionDone descending -> ascending)
+			(ontime 5000 hovering -> spinning)
+			(on tagfound *-> orienting)
+			(ontime 8000 orienting -> spinning)
+			(ontime 2000 spinning -> hovering)
+			
+			(event descentionDone [robot altitude <= 850])
+			(event tagfound [ robot tagsNumberDetected = 2 ]))
+		(onentry (spawn lookAlgo hovering)))
+	(state stabilizing
+		(onexit [robot modeFreeFlight ]))
+	(state landing
+		(onentry [robot land]))
+	(state moving
+		(onentry [robot moveFor: 1000 atSpeed: 0.35 withDirection: 0 ])
+		(onexit [robot stabilize ]))
+	(event oriented [robot roundelTagIsOrientedAndCentered ])
+	(event ascentionDone [robot altitude >= 1450])
+	
+	(on oriented looking -> stabilizing)
+	(ontime 100 takingoff -> ascending)
+	(on ascentionDone ascending -> looking)
+	(ontime 5000 stabilizing -> moving)
+	(ontime 1000 moving -> looking)
+)
+(spawn tagNavigator takingoff)
+
+
