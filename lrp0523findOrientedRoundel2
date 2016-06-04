@@ -1,0 +1,50 @@
+;;; New program created by CaroHernandez on 25 May 2016
+;;; New program created by CaroHernandez on 25 May 2016
+;;; New program created by CaroHernandez on 25 May 2016
+(var altitude := [900]) (var maxaltitude := [1100]) (var vspeed := [0.3]) (var pitch := [-0.25])
+(var robotaltitude := [robot altitude]) 
+(machine tagNavigator
+    	(state takingoff
+		(onentry [ robot modeHoverOnTopOfRoundel. robot takeOff ]))
+	(state ascending 			(onentry [ robot ledsFireForever. 					robot elevate: vspeed])
+			(onexit [robot stabilize.					robot ledsStandard]))	(state descending		(onentry [ robot ledsFireForever. 					robot elevate: vspeed negated])
+			(onexit [robot stabilize.					robot ledsStandard]))
+	(state looking
+		(machine lookAlgo
+			(state hovering
+				(onentry [ robot ledsBlinkRedForever ])				(onexit [robot ledsStandard]))			(state configuring 				(onentry [  ]))
+			(state orienting				(onentry [robot ledsBlinkGreenForever ])				(onexit [robot ledsStandard]))
+			(state elevatingNormal
+				(onentry  [ robot ledsFireForever . 						 robot elevate: vspeed])
+				(onexit [robot stabilize.						robot ledsStandard]))
+			(state elevatingMax
+				(onentry [ robot ledsFireForever.						  robot elevate: vspeed])
+				(onexit [robot stabilize. 						robot ledsStandard]))
+			
+			(event flyingTooLow [(robot altitude+200) < altitude])
+			(event tagfound [ robot roundelTagDetected ])
+			(event normalAltitudeReached [(robot altitude + 200) >= altitude])			(event maxAltitudeReached [(robot altitude +200) >= maxaltitude])
+			(ontime 5000 hovering -> elevatingMax)
+			(on flyingTooLow hovering->elevatingNormal)
+			(on normalAltitudeReached elevatingNormal -> hovering)
+			(on maxAltitudeReached elevatingMax -> hovering)
+			(on tagfound *-> orienting)
+			(ontime 5000 orienting -> elevatingMax)			(ontime 50 configuring -> hovering)
+			)
+		(onentry (spawn lookAlgo configuring)))
+	(state stabilizing		(onentry [robot ledsBlinkGreenForever])
+		(onexit [robot modeFreeFlight. 			       robot ledsStandard ]))
+	(state landing
+		(onentry [robot land]))
+	(state moving
+		(onentry [robot pitch: pitch ])
+		(onexit [robot stabilize. robot modeHoverOnTopOfRoundel ]))
+	(event oriented [robot roundelTagIsOrientedAndCentered ])	(event ascendingDone  [(robot altitude + 100) >= altitude])
+	(event descendingDone  [(robot altitude - 100) <= altitude])
+	(event tooHighAfterLooking [robot altitude - 200 > altitude])	(on oriented looking -> stabilizing)	(on tooHighAfterLooking stabilizing->descending)	(on descendingDone descending->stabilizing)
+	(ontime 5000 takingoff -> ascending)	(on ascendingDone ascending -> looking)
+	(ontime 7000 stabilizing -> moving)
+	(ontime 950 moving -> looking)
+)
+(spawn tagNavigator takingoff)
+
