@@ -1,0 +1,13 @@
+;;; New program created by CaroHernandez on 16 October 2016
+(var green := [ARDConstant ledAnimation_GREEN])
+(var red := [ARDConstant ledAnimation_RED])
+(var t := [100]) (var f := [1]) (var ntags := [[robot tagsTotalDetected]])
+(machine tagdetector
+	(state undetected
+		(onentry [robot animateLEDs: red frequency: f duration: t]))
+	(state detected
+		(onentry [robot animateLEDs: red frequency: f duration: t])
+	)
+	(on [ntags value > 0] undetected -> detected found)
+	(on [ntags value = 0] detected -> undetected lost))
+(spawn tagdetector undetected)
